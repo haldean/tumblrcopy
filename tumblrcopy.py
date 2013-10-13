@@ -1,6 +1,8 @@
 import feedparser
+import lxml.html as html
 import os
 import re
+import subprocess
 import sys
 from sh import mkdir
 
@@ -26,6 +28,16 @@ def sanitize_path(s):
 def write_entry(dir, entry):
   with open(dir + '/index.html', 'w') as f:
     f.write(entry.description.encode('utf-8'))
+  write_images(dir, entry.description)
+
+def write_images(dir, content):
+  print 'downloading images...'
+  content = html.fragment_fromstring(content, create_parent='div')
+  for i, tag in enumerate(content.cssselect('img')):
+    src = tag.get('src')
+    if '_500' in src:
+      src = src.replace('_500', '')
+    subprocess.check_call('curl %s > %s/i%02d.png' % (src, dir, i), shell=True)
 
 def mkdirs(d):
   print 'Output for feed: ' + d.feed.title
